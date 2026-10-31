@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vehicle Gear Shift Simulator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<section id="home" class="screen is-active" aria-labelledby="home-title">
+  <svg class="home-gate" viewBox="0 0 300 220" aria-hidden="true">
+    <path d="M50 40V180M150 40V180M250 40V180M50 110H250" />
+    <circle cx="150" cy="110" r="13" />
+  </svg>
+  <div class="home-wrap">
+    <header>
+      <h1 id="home-title">Vehicle Gear Shift Simulator</h1>
+      <p class="lede">Drive a five-speed manual and see how the clutch, gears and revs work together. Every number on the dashboard is calculated by a C engine running in your browser.</p>
+    </header>
+
+    <p id="boot-error" class="boot-error" hidden></p>
+
+    <fieldset class="pick">
+      <legend>Vehicle</legend>
+      <div id="vehicle-list" class="cards" role="radiogroup" aria-label="Vehicle"></div>
+    </fieldset>
+
+    <fieldset class="pick">
+      <legend>Driving mode</legend>
+      <div id="mode-list" class="cards" role="radiogroup" aria-label="Driving mode"></div>
+    </fieldset>
+
+    <div class="home-actions">
+      <button id="start-btn" class="btn primary big" disabled>Start simulation</button>
+    </div>
+
+    <details class="keys">
+      <summary>Keyboard controls</summary>
+      <dl>
+        <dt>W / Up</dt><dd>Accelerator</dd>
+        <dt>S / Down</dt><dd>Brake</dd>
+        <dt>Shift / A</dt><dd>Clutch (press fast, releases slowly)</dd>
+        <dt>R, N, 1 to 5</dt><dd>Select gear</dd>
+        <dt>E</dt><dd>Ignition on / off</dd>
+        <dt>P</dt><dd>Pause</dd>
+      </dl>
+    </details>
+  </div>
+</section>
+
+<!-- ============ SIMULATOR ============ -->
+<section id="sim" class="screen" aria-label="Driving simulator">
+  <header class="topbar">
+    <div class="title-block">
+      <strong id="hud-vehicle">Vehicle</strong>
+      <span id="hud-mode" class="dim">Mode</span>
+    </div>
+    <div class="top-actions">
+      <button id="ignition-btn" class="btn ignition">Start engine</button>
+      <button id="pause-btn" class="btn">Pause</button>
+      <button id="reset-btn" class="btn">Reset</button>
+      <button id="home-btn" class="btn">Home</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Instruments -->
+    <section class="panel instruments" aria-label="Instruments">
+      <div class="gauges">
+        <div class="gauge" id="speedo"></div>
+        <div class="gauge" id="tacho"></div>
+      </div>
+
+      <div class="readouts">
+        <div class="gear-box" aria-live="polite">
+          <span class="label">Gear</span>
+          <span id="gear-letter" class="gear-letter">N</span>
+          <span id="hint" class="hint" aria-live="polite"></span>
+        </div>
+        <div class="meter">
+          <div class="meter-head"><span class="label">Fuel</span><b id="fuel-text">0 L</b></div>
+          <div class="bar"><i id="fuel-bar"></i></div>
+        </div>
+        <div class="meter">
+          <div class="meter-head"><span class="label">Engine temperature</span><b id="temp-text">0 °C</b></div>
+          <div class="bar temp"><i id="temp-bar"></i></div>
+        </div>
+      </div>
+
+      <ul class="lights" id="lights">
+        <li data-bit="1">Overheat</li>
+        <li data-bit="2">Redline</li>
+        <li data-bit="4">Stalled</li>
+        <li data-bit="8">Low fuel</li>
+        <li data-bit="256">No fuel</li>
+        <li data-bit="16">Lugging</li>
+        <li data-bit="32">Gear grind</li>
+        <li data-bit="64">Clutch slip</li>
+        <li data-bit="128">Gearbox</li>
+      </ul>
+      <p id="feedback" class="feedback" role="status" aria-live="polite">Engine off. Press E or Start engine.</p>
+    </section>
+
+    <!-- Performance -->
+    <section class="panel performance" aria-label="Performance">
+      <h2>Performance</h2>
+      <div class="score-row">
+        <div class="ring" aria-label="Driving score">
+          <svg viewBox="0 0 100 100"><circle class="ring-bg" cx="50" cy="50" r="42"/><circle id="ring-fg" class="ring-fg" cx="50" cy="50" r="42"/></svg>
+          <div class="ring-text"><b id="score">100</b><span>score</span></div>
+        </div>
+        <div class="subscores">
+          <div><span>Shifting</span><div class="bar slim"><i id="sc-shift"></i></div></div>
+          <div><span>Smoothness</span><div class="bar slim"><i id="sc-smooth"></i></div></div>
+          <div><span>Fuel use</span><div class="bar slim"><i id="sc-fuel"></i></div></div>
+        </div>
+      </div>
+      <dl class="stats">
+        <div><dt>Fuel now</dt><dd id="st-inst">0</dd></div>
+        <div><dt>Trip average</dt><dd id="st-avg">0</dd></div>
+        <div><dt>Distance</dt><dd id="st-dist">0.00 km</dd></div>
+        <div><dt>Time</dt><dd id="st-time">0:00</dd></div>
+        <div><dt>Top speed</dt><dd id="st-top">0 km/h</dd></div>
+        <div><dt>Stalls / grinds</dt><dd id="st-faults">0 / 0</dd></div>
+      </dl>
+      <div class="meter">
+        <div class="meter-head"><span class="label">Transmission condition</span><b id="trans-text">100%</b></div>
+        <div class="bar"><i id="trans-bar"></i></div>
+      </div>
+      <div class="meter">
+        <div class="meter-head"><span class="label">Clutch condition</span><b id="clutch-text">100%</b></div>
+        <div class="bar"><i id="clutch-bar"></i></div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <section class="panel controls" aria-label="Driver controls">
+      <div class="gate-wrap">
+        <h2>Gear lever</h2>
+        <div class="gate" id="gate">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M20 18V82M50 18V82M80 18V82M20 50H80" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div id="knob" class="knob" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="pedals" aria-label="Pedals">
+        <div class="pedal" data-pedal="clutch"><span class="pedal-label">Clutch</span><div class="track"><i></i></div><b class="pedal-val">0%</b></div>
+        <div class="pedal" data-pedal="brake"><span class="pedal-label">Brake</span><div class="track"><i></i></div><b class="pedal-val">0%</b></div>
+        <div class="pedal" data-pedal="throttle"><span class="pedal-label">Accelerator</span><div class="track"><i></i></div><b class="pedal-val">0%</b></div>
+      </div>
+
+      <div class="slope">
+        <label for="slope-input">Road gradient <b id="slope-text">0%</b></label>
+        <input id="slope-input" type="range" min="-12" max="12" step="1" value="0">
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="panel history" aria-label="Driving history">
+      <div class="panel-head">
+        <h2>Driving history</h2>
+        <button id="report-btn" class="btn small">Download report</button>
+      </div>
+      <ol id="history-list" class="history-list"></ol>
+    </section>
+  </div>
+
+  <div id="pause-overlay" class="overlay" hidden>
+    <div><b>Paused</b><p>Press P or Resume to continue.</p><button id="resume-btn" class="btn primary">Resume</button></div>
+  </div>
+</section>
+
+<script src="sim.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
